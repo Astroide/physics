@@ -139,14 +139,14 @@ function main() {
                 if (body.fixed || other.fixed) {
                     // ...
                 } else {
-                    body.velocity.x *= body.mass;
-                    body.velocity.y *= body.mass;
-                    other.velocity.x *= other.mass;
-                    other.velocity.y *= other.mass;
-                    body.velocity.add(other.velocity);
+                    // body.velocity.x *= body.mass;
+                    // body.velocity.y *= body.mass;
+                    // other.velocity.x *= other.mass;
+                    // other.velocity.y *= other.mass;
+                    // body.velocity.add(other.velocity);
                     body.mass += other.mass;
-                    body.velocity.x /= body.mass;
-                    body.velocity.y /= body.mass;
+                    // body.velocity.x /= body.mass;
+                    // body.velocity.y /= body.mass;
                     dead.push(other.id);
                 }
             }
