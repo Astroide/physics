@@ -42,18 +42,9 @@ class Thing {
         this.mass = mass;
         this.velocity = new Vector(0, 0);
         this.id = Math.floor(Math.random() * 100000);
-        this.color = Math.floor(Math.random() * 0xFFFFFF);
-        if (this.color & 0xFF > 0xCC) {
-            this.color &= 0xFFFF00;
-            this.color |= 0xCC;
-        }
-        if ((this.color & 0xFF00) >> 8 > 0xCC) {
-            this.color &= 0xFF00FF;
-            this.color |= 0xCC00;
-        }
-        if ((this.color & 0xFF0000) >> 16 > 0xCC) {
-            this.color &= 0x00FFFF;
-            this.color |= 0xCC0000;
+        this.color = 0;
+        while (this.color < 50) {
+            this.color = Math.floor(Math.random() * 0xFFFFFF);
         }
         this.radius = Math.sqrt((this.mass / 100000) / Math.PI);
     }
@@ -70,7 +61,7 @@ class Thing {
         ctx.strokeStyle = 'limegreen';
         ctx.beginPath();
         ctx.moveTo(this.x, this.y);
-        ctx.lineTo(this.x + Math.cos(angle) * this.velocity.magnitude / 1e6, this.y + Math.sin(angle) * this.velocity.magnitude / 1e6);
+        ctx.lineTo(this.x + Math.cos(angle) * this.velocity.magnitude / 2e6, this.y + Math.sin(angle) * this.velocity.magnitude / 2e6);
         ctx.stroke();
     }
 
@@ -143,6 +134,10 @@ addEventListener('mouseup', e => {
         vec.x *= 2;
         vec.y *= 2;
     }
+    if (e.metaKey) {
+        vec.x *= 2;
+        vec.y *= 2;
+    }
     if (e.altKey) {
         body.fixed = true;
     }
@@ -151,9 +146,13 @@ addEventListener('mouseup', e => {
 
 let mouseX = 0;
 let mouseY = 0;
+let meta, alt, shift;
 addEventListener('mousemove', e => {
     mouseX = e.pageX;
     mouseY = e.pageY;
+    meta = e.metaKey;
+    alt = e.altKey;
+    shift = e.shiftKey;
     // bodies[0].x = mouseX;
     // bodies[0].y = mouseY;
 });
@@ -167,7 +166,7 @@ addEventListener('keydown', e => {
 });
 function main() {
     // if (bodies.length < 2) {
-        // return;
+    // return;
     // }
     ctx.fillStyle = `#00000004`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -243,11 +242,15 @@ function main() {
         ctx.strokeStyle = 'blue';
         let size = distance(new Vector(startX, startY), new Vector(mouseX, mouseY));
         ctx.beginPath();
-        ctx.moveTo(startX, startY);
+        if (!alt) {
+            ctx.moveTo(startX, startY);
+        }
+        ctx.lineWidth = 1 + (shift ? 1 : 0) + (meta ? 1 : 0);
         ctx.save();
         ctx.translate(startX, startY);
         ctx.rotate(Math.atan2(mouseY - startY, mouseX - startX));
         ctx.arc(0, 0, size, 0, Math.PI * 2);
+        ctx.lineWidth = 1;
         ctx.restore();
         ctx.fill();
         ctx.stroke();
