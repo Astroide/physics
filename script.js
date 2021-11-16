@@ -85,14 +85,14 @@ for (let i = 0; i < 500; i++) {
     bodies.push(b);
 }
 
-addEventListener('click', e => {
-    const b = canvas.getBoundingClientRect();
-    e.clientX -= b.left;
-    e.clientY -= b.top;
-    bodies.push(new Thing(e.clientX, e.clientY, 10000));
-    bodies.slice(-1)[0].velocity = new Vector(0.25, 0);
-    bodies.slice(-1)[0].velocity.normalize();
-})
+// addEventListener('click', e => {
+//     const b = canvas.getBoundingClientRect();
+//     e.clientX -= b.left;
+//     e.clientY -= b.top;
+//     bodies.push(new Thing(e.clientX, e.clientY, 10000));
+//     bodies.slice(-1)[0].velocity = new Vector(0.25, 0);
+//     bodies.slice(-1)[0].velocity.normalize();
+// });
 
 
 /**
@@ -102,8 +102,33 @@ addEventListener('click', e => {
 function distance(a, b) {
     return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
 }
+let mousePressed = false;
+let startX = 0;
+let startY = 0;
+
+addEventListener('mousedown', e => {
+    startX = e.pageX;
+    startY = e.pageY;
+    mousePressed = true;
+});
+
+addEventListener('mouseup', e => {
+    mousePressed = false;
+    let size = distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY));
+    size *= size;
+    size *= Math.PI;
+    bodies.push(new Thing(startX, startY, size));
+});
+
+let mouseX = 0;
+let mouseY = 0;
+addEventListener('mousemove', e => {
+    mouseX = e.pageX;
+    mouseY = e.pageY;
+});
+
 function main() {
-    ctx.fillStyle = `#ffffff04`
+    ctx.fillStyle = `#ffffff04`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     // let
@@ -139,14 +164,14 @@ function main() {
                 if (body.fixed || other.fixed) {
                     // ...
                 } else {
-                    // body.velocity.x *= body.mass;
-                    // body.velocity.y *= body.mass;
-                    // other.velocity.x *= other.mass;
-                    // other.velocity.y *= other.mass;
-                    // body.velocity.add(other.velocity);
+                    body.velocity.x *= body.mass;
+                    body.velocity.y *= body.mass;
+                    other.velocity.x *= other.mass;
+                    other.velocity.y *= other.mass;
+                    body.velocity.add(other.velocity);
                     body.mass += other.mass;
-                    // body.velocity.x /= body.mass;
-                    // body.velocity.y /= body.mass;
+                    body.velocity.x /= body.mass;
+                    body.velocity.y /= body.mass;
                     dead.push(other.id);
                 }
             }
@@ -168,6 +193,13 @@ function main() {
     bodies.forEach(body => {
         body.draw(ctx);
     });
+    if (mousePressed) {
+        ctx.fillStyle = 'red';
+        let size = distance(new Vector(startX, startY), new Vector(mouseX, mouseY));
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.arc(startX, startY, size / 2, 0, Math.PI * 2);
+    }
     setTimeout(main, 1000 / 50);
     //console.log("!");
 }
