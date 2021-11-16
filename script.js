@@ -43,22 +43,35 @@ class Thing {
         this.velocity = new Vector(0, 0);
         this.id = Math.floor(Math.random() * 100000);
         this.color = Math.floor(Math.random() * 0xFFFFFF);
-        this.radius = Math.sqrt((this.mass / 10000) / Math.PI);
+        if (this.color & 0xFF > 0xCC) {
+            this.color &= 0xFFFF00;
+            this.color |= 0xCC;
+        }
+        if ((this.color & 0xFF00) >> 8 > 0xCC) {
+            this.color &= 0xFF00FF;
+            this.color |= 0xCC00;
+        }
+        if ((this.color & 0xFF0000) >> 16 > 0xCC) {
+            this.color &= 0x00FFFF;
+            this.color |= 0xCC0000;
+        }
+        this.radius = Math.sqrt((this.mass / 100000) / Math.PI);
     }
 
     draw(ctx) {
-        this.radius = Math.sqrt((this.mass / 10000) / Math.PI);
+        this.radius = Math.sqrt((this.mass / 100000) / Math.PI);
         // ctx.fillStyle = this.mass == 10 ? 'blue' : 'red';
         ctx.fillStyle = '#' + this.color.toString(16).padStart('0');
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.fixed ? 10 : this.radius, 0, 2 * Math.PI);
         ctx.fill();
-        // const angle = Math.atan2(this.velocity.y, this.velocity.x);
-        // ctx.strokeStyle = 'limegreen';
-        // ctx.beginPath();
-        // ctx.moveTo(this.x, this.y);
-        // ctx.lineTo(this.x + Math.cos(angle) * this.velocity.magnitude * 8, this.y + Math.sin(angle) * this.velocity.magnitude * 8);
-        // ctx.stroke();
+        const angle = Math.atan2(this.velocity.y, this.velocity.x);
+        if (this.fixed) return;
+        ctx.strokeStyle = 'limegreen';
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(this.x + Math.cos(angle) * this.velocity.magnitude / 1e6, this.y + Math.sin(angle) * this.velocity.magnitude / 1e6);
+        ctx.stroke();
     }
 
     clone() {
@@ -72,17 +85,19 @@ class Thing {
 }
 
 let bodies = [
-    new Thing(250, 250, 5.972e15),
+    // new Thing(250, 250, 5.972e6),
 ];
-bodies[0].fixed = true;
+// bodies[0].fixed = true;
 
 const canvas = document.getElementById('canvas');
 const ctx = canvas.getContext('2d');
-for (let i = 0; i < 500; i++) {
-    let b = new Thing(Math.random() * canvas.width, Math.random() * canvas.height, 100000);
-    const angle = Math.random() * Math.PI * 2;
+ctx.fillStyle = 'black';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+for (let i = 0; i < 45; i++) {
+    let b = new Thing(Math.random() * canvas.width, Math.random() * canvas.height, 1000000);
+    const angle = Math.atan2(250 - b.y, 250 - b.x) + Math.PI / 2;
     b.velocity = new Vector(Math.cos(angle) / 2, Math.sin(angle) / 2);
-    bodies.push(b);
+    // bodies.push(b);
 }
 
 // addEventListener('click', e => {
@@ -117,8 +132,21 @@ addEventListener('mouseup', e => {
     let size = distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY));
     size *= size;
     size *= Math.PI;
-    size *= 10000;
-    bodies.push(new Thing(startX, startY, size));
+    size *= 100000;
+    let body = new Thing(startX, startY, size);
+    bodies.push(body);
+    let vec = new Vector(body.x - e.pageX, body.y - e.pageY);
+    vec.normalize();
+    vec.x *= -body.mass;
+    vec.y *= -body.mass;
+    if (e.shiftKey) {
+        vec.x *= 2;
+        vec.y *= 2;
+    }
+    if (e.altKey) {
+        body.fixed = true;
+    }
+    body.velocity = vec;
 });
 
 let mouseX = 0;
@@ -126,10 +154,22 @@ let mouseY = 0;
 addEventListener('mousemove', e => {
     mouseX = e.pageX;
     mouseY = e.pageY;
+    // bodies[0].x = mouseX;
+    // bodies[0].y = mouseY;
 });
-
+let fps = 60;
+let lastTime = Date.now();
+let paused = false;
+addEventListener('keydown', e => {
+    if (e.key.toLowerCase() === 'p') {
+        paused = !paused;
+    }
+});
 function main() {
-    ctx.fillStyle = `#ffffff04`;
+    // if (bodies.length < 2) {
+        // return;
+    // }
+    ctx.fillStyle = `#00000004`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     // let
@@ -138,12 +178,13 @@ function main() {
     const newBodies = bodies.map(x => x.clone());
     let dead = [];
     newBodies.forEach(body => {
+        if (paused) return;
         if (dead.includes(body.id)) {
             return;
         }
         if (!body.fixed) {
-            body.x += body.velocity.x;
-            body.y += body.velocity.y;
+            body.x += body.velocity.x / body.mass;
+            body.y += body.velocity.y / body.mass;
         }
         //console.log(">" + body.velocity.x);
         bodies.forEach(other => {
@@ -154,15 +195,15 @@ function main() {
             let dir = new Vector(other.x - body.x, other.y - body.y);
             // console.log(dir.magnitude);
             let g = 6.67430e-11;
-            let force = g * ((body.mass * other.mass) / ((distance(body, other) * 10) ** 2));
+            let force = g * ((body.mass * other.mass) / ((distance(body, other) * 1e-3) ** 2));
             //console.log(force);
             // force *= this.mass / other.mass;
             force /= 50;
-            dir.magnitude = force / body.mass;
+            dir.magnitude = force;
             // console.log(dir.magnitude);
             body.velocity = body.velocity.add(dir);
             if (distance(body, other) < (body.radius + other.radius)) {
-                if (body.fixed || other.fixed) {
+                if ((body.fixed || other.fixed) || body.mass < other.mass) {
                     // ...
                 } else {
                     body.velocity.x *= body.mass;
@@ -178,16 +219,19 @@ function main() {
             }
         });
         // if (body.x >= canvas.width) {
-            // body.x = 0;
+        // body.x = 0;
         // } else if (body.x < 0) {
-            // body.x = canvas.width - 1;
+        // body.x = canvas.width - 1;
         // }
 
         // if (body.y >= canvas.height) {
-            // body.y = 0;
+        // body.y = 0;
         // } else if (body.y < 0) {
-            // body.y = canvas.height - 1;
+        // body.y = canvas.height - 1;
         // }
+        if (body.x ** 2 + body.y ** 2 > (canvas.width + 200) ** 2) {
+            body.dead = true;
+        }
     });
     bodies = newBodies;
     bodies = bodies.filter(x => !dead.includes(x.id));
@@ -200,12 +244,24 @@ function main() {
         let size = distance(new Vector(startX, startY), new Vector(mouseX, mouseY));
         ctx.beginPath();
         ctx.moveTo(startX, startY);
-        ctx.arc(startX, startY, size, 0, Math.PI * 2);
+        ctx.save();
+        ctx.translate(startX, startY);
+        ctx.rotate(Math.atan2(mouseY - startY, mouseX - startX));
+        ctx.arc(0, 0, size, 0, Math.PI * 2);
+        ctx.restore();
         ctx.fill();
         ctx.stroke();
     }
-    setTimeout(main, 1000 / 50);
+    fps *= 20;
+    fps += 1000 / (Date.now() - lastTime);
+    fps /= 21;
+    lastTime = Date.now();
+    ctx.fillStyle = 'black';
+    ctx.clearRect(20, 10, 80, 20);
+    ctx.fillText('FPS ' + Math.floor(fps) + (paused ? ' P' : ''), 20, 20);
+    if (fps < 30) {
+        debugger;
+    }
     //console.log("!");
 }
-
-main();
+setInterval(main, Math.floor(1000 / 50));
