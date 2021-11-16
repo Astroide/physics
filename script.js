@@ -198,7 +198,8 @@ function main() {
         let size = distance(new Vector(startX, startY), new Vector(mouseX, mouseY));
         ctx.beginPath();
         ctx.moveTo(startX, startY);
-        ctx.arc(startX, startY, size / 2, 0, Math.PI * 2);
+        ctx.arc(startX, startY, size, 0, Math.PI * 2);
+        ctx.fill();
     }
     setTimeout(main, 1000 / 50);
     //console.log("!");
