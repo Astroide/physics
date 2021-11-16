@@ -115,9 +115,9 @@ addEventListener('mousedown', e => {
 addEventListener('mouseup', e => {
     mousePressed = false;
     let size = distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY));
-    size *= 10000;
     size *= size;
     size *= Math.PI;
+    size *= 10000;
     bodies.push(new Thing(startX, startY, size));
 });
 
