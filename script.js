@@ -120,33 +120,45 @@ addEventListener('mousedown', e => {
 
 addEventListener('mouseup', e => {
     mousePressed = false;
-    let size = distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY));
-    size *= size;
-    size *= Math.PI;
-    size *= 100000;
-    let body = new Thing(startX, startY, size);
-    bodies.push(body);
-    let vec = new Vector(body.x - e.pageX, body.y - e.pageY);
-    vec.normalize();
-    vec.x *= -body.mass;
-    vec.y *= -body.mass;
-    if (e.shiftKey) {
-        vec.x *= 2;
-        vec.y *= 2;
+    if (x) {
+        let vec = new Vector(startX - e.pageX, startY - e.pageY);
+        vec.normalize();
+        vec.x *= -20000 * (distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY)) / 75);
+        vec.y *= -20000 * (distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY)) / 75);
+        for (let i = 0; i < 10; i++) {
+            let b = new Thing(startX + Math.random() * 50 - 25, startY + Math.random() * 50 - 25, 20000);
+            b.velocity = new Vector(vec.x, vec.y);
+            bodies.push(b);
+        }
+    } else {
+        let size = distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY));
+        size *= size;
+        size *= Math.PI;
+        size *= 100000;
+        let body = new Thing(startX, startY, size);
+        bodies.push(body);
+        let vec = new Vector(body.x - e.pageX, body.y - e.pageY);
+        vec.normalize();
+        vec.x *= -body.mass;
+        vec.y *= -body.mass;
+        if (e.shiftKey) {
+            vec.x *= 2;
+            vec.y *= 2;
+        }
+        if (e.metaKey) {
+            vec.x *= 2;
+            vec.y *= 2;
+        }
+        if (e.altKey) {
+            body.fixed = true;
+        }
+        body.velocity = vec;
     }
-    if (e.metaKey) {
-        vec.x *= 2;
-        vec.y *= 2;
-    }
-    if (e.altKey) {
-        body.fixed = true;
-    }
-    body.velocity = vec;
 });
 
 let mouseX = 0;
 let mouseY = 0;
-let meta, alt, shift;
+let meta, alt, shift, x;
 addEventListener('mousemove', e => {
     mouseX = e.pageX;
     mouseY = e.pageY;
@@ -155,6 +167,17 @@ addEventListener('mousemove', e => {
     shift = e.shiftKey;
     // bodies[0].x = mouseX;
     // bodies[0].y = mouseY;
+});
+addEventListener('keydown', e => {
+    console.log(e.key);
+    if (e.key.toLowerCase() == 'x') {
+        x = true;
+    }
+});
+addEventListener('keyup', e => {
+    if (e.key.toLowerCase() == 'x') {
+        x = false;
+    }
 });
 let fps = 60;
 let lastTime = Date.now();
@@ -240,20 +263,28 @@ function main() {
     if (mousePressed) {
         ctx.fillStyle = 'red';
         ctx.strokeStyle = 'blue';
-        let size = distance(new Vector(startX, startY), new Vector(mouseX, mouseY));
-        ctx.beginPath();
-        if (!alt) {
+        if (!x) {
+            let size = distance(new Vector(startX, startY), new Vector(mouseX, mouseY));
+            ctx.beginPath();
+            if (!alt) {
+                ctx.moveTo(startX, startY);
+            }
+            ctx.lineWidth = 1 + (shift ? 1 : 0) + (meta ? 1 : 0);
+            ctx.save();
+            ctx.translate(startX, startY);
+            ctx.rotate(Math.atan2(mouseY - startY, mouseX - startX));
+            ctx.arc(0, 0, size, 0, Math.PI * 2);
+            ctx.lineWidth = 1;
+            ctx.restore();
+            ctx.fill();
+            ctx.stroke();
+        } else {
+            ctx.beginPath();
             ctx.moveTo(startX, startY);
+            ctx.lineTo(mouseX, mouseY);
+            ctx.lineWidth = 1 + (shift ? 1 : 0) + (meta ? 1 : 0);
+            ctx.stroke();
         }
-        ctx.lineWidth = 1 + (shift ? 1 : 0) + (meta ? 1 : 0);
-        ctx.save();
-        ctx.translate(startX, startY);
-        ctx.rotate(Math.atan2(mouseY - startY, mouseX - startX));
-        ctx.arc(0, 0, size, 0, Math.PI * 2);
-        ctx.lineWidth = 1;
-        ctx.restore();
-        ctx.fill();
-        ctx.stroke();
     }
     fps *= 20;
     fps += 1000 / (Date.now() - lastTime);
