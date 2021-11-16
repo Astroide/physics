@@ -182,16 +182,19 @@ addEventListener('keyup', e => {
 let fps = 60;
 let lastTime = Date.now();
 let paused = false;
+let trail = true;
 addEventListener('keydown', e => {
     if (e.key.toLowerCase() === 'p') {
         paused = !paused;
+    } else if (e.key.toLowerCase() === 't') {
+        trail = !trail;
     }
 });
 function main() {
     // if (bodies.length < 2) {
     // return;
     // }
-    ctx.fillStyle = `#00000004`;
+    ctx.fillStyle = trail ? `#00000004` : `#000000`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     // let
