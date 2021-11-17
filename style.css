@@ -3,3 +3,8 @@ canvas {
     left: 0;
     top: 0;
 }
+#slow-motion {
+    position: absolute;
+    left: 0;
+    top: 610px;
+}
