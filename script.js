@@ -231,6 +231,15 @@ addEventListener('keydown', e => {
     if (e.key.toLowerCase() == 's') {
         slowMotion = !slowMotion;
     }
+    if (e.key.toLowerCase() == 'c') {
+        if (collisionMode == 'collide') {
+            collisionMode = 'merge';
+        } else if (collisionMode == 'merge') {
+            collisionMode = 'none';
+        } else {
+            collisionMode = 'collide';
+        }
+    }
 });
 addEventListener('keyup', e => {
     if (e.key.toLowerCase() == 'x') {
@@ -244,6 +253,8 @@ let fps = 60;
 let lastTime = Date.now();
 let paused = false;
 let trail = true;
+/** @type {'merge' | 'collide' | 'none'} */
+let collisionMode = 'merge';
 addEventListener('keydown', e => {
     if (e.key.toLowerCase() === 'p') {
         paused = !paused;
@@ -303,48 +314,64 @@ function main() {
             // console.log(dir.magnitude);
             body.velocity = body.velocity.add(dir);
             if (distance(oldBody, other) < (oldBody.radius + other.radius) && (body.gracePeriods[other.id] === undefined || body.gracePeriods[other.id] <= 0)) {
-                if ((oldBody.fixed || other.fixed) || oldBody.mass < other.mass) {
+                if ((oldBody.fixed || other.fixed) || (oldBody.mass < other.mass && collisionMode == 'merge')) {
                     // ...
                 } else {
-                    oldBody.velocity.x *= body.mass;
-                    oldBody.velocity.y *= body.mass;
-                    other.velocity.x *= other.mass;
-                    other.velocity.y *= other.mass;
-                    body.velocity = oldBody.velocity.add(other.velocity);
-                    body.mass += other.mass;
-                    body.velocity.x /= body.mass;
-                    body.velocity.y /= body.mass;
-                    let impactPoint = other.position.sub(body.position).mul(body.radius / (body.radius + other.radius)).add(body.position);
-                    body.position = impactPoint;
-                    let collisionSpeed = oldBody.velocity.sub(other.velocity).magnitude;
-                    let partMass = 1e6;
-                    if (collisionSpeed > 2 && (other.mass > 1e7 && oldBody.mass > 1e7)) {
-                        let extra = body.mass / 100 * (collisionSpeed / 1e9);
-                        body.mass -= extra;
-                        // let radius = body.radius;
-                        let count = extra / partMass;
-                        let newThings = [];
-                        for (let i = 0; i < count; i++) {
-                            let newObject = new Thing(0, 0, partMass);
-                            // console.log('size', radius, newObject.radius);
-                            newObject.x = body.x; //+ Math.cos(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
-                            newObject.y = body.y; //+ Math.sin(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
-                            newObject.velocity = body.velocity.clone().perpendicular().normalize().mul(Math.sign(Math.random() * 2 - 1)).mul(collisionSpeed / 1e9 * 10);
-                            newObject.velocity.add(body.velocity);
-                            // newObject.velocity = (new Vector(Math.cos(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9, Math.sin(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9)).mul(1 - (Math.random() - 0.5) / 1.5).mul(0.8);
-                            newObject.velocity.add(body.velocity);
-                            newObject.velocity.angle += Math.random() / 1.5 - 1 / 3;
-                            body.gracePeriods[newObject.id] = body.radius / 7;
-                            for (let i = 0; i < newThings.length; i++) {
-                                const e = newThings[i];
-                                e.gracePeriods[newObject.id] = body.radius / 7;
-                                newObject.gracePeriods[e.id] = body.radius / 7;
+                    if (collisionMode == 'merge') {
+                        oldBody.velocity.x *= body.mass;
+                        oldBody.velocity.y *= body.mass;
+                        other.velocity.x *= other.mass;
+                        other.velocity.y *= other.mass;
+                        body.velocity = oldBody.velocity.add(other.velocity);
+                        body.mass += other.mass;
+                        body.velocity.x /= body.mass;
+                        body.velocity.y /= body.mass;
+                        let impactPoint = other.position.sub(body.position).mul(body.radius / (body.radius + other.radius)).add(body.position);
+                        // body.position = impactPoint;
+                        let collisionSpeed = oldBody.velocity.sub(other.velocity).magnitude;
+                        let partMass = 1e6;
+                        if (collisionSpeed > 2 && (other.mass > 1e7 && oldBody.mass > 1e7)) {
+                            let extra = body.mass / 100 * (collisionSpeed / 1e9);
+                            body.mass -= extra;
+                            // let radius = body.radius;
+                            let count = extra / partMass;
+                            let newThings = [];
+                            for (let i = 0; i < count; i++) {
+                                let newObject = new Thing(0, 0, partMass);
+                                // console.log('size', radius, newObject.radius);
+                                newObject.x = impactPoint.x; //+ Math.cos(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
+                                newObject.y = impactPoint.y; //+ Math.sin(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
+                                newObject.velocity = body.velocity.clone().perpendicular().normalize().mul(Math.sign(Math.random() * 2 - 1)).mul(collisionSpeed / 1e9 * 10);
+                                newObject.velocity.add(body.velocity);
+                                // newObject.velocity = (new Vector(Math.cos(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9, Math.sin(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9)).mul(1 - (Math.random() - 0.5) / 1.5).mul(0.8);
+                                newObject.velocity.add(body.velocity);
+                                newObject.velocity.angle += Math.random() / 1.5 - 1 / 3;
+                                body.gracePeriods[newObject.id] = body.radius / 7;
+                                for (let i = 0; i < newThings.length; i++) {
+                                    const e = newThings[i];
+                                    e.gracePeriods[newObject.id] = body.radius / 7;
+                                    newObject.gracePeriods[e.id] = body.radius / 7;
+                                }
+                                newObjects.push(newObject);
+                                newThings.push(newObject);
                             }
-                            newObjects.push(newObject);
-                            newThings.push(newObject);
                         }
+                        dead.push(other.id);
+                    } else if (collisionMode == 'collide') {
+                        // ...
+                        console.log('collide');
+                        let angle = Math.atan2(other.y - body.y, other.x - body.x);
+                        let impactPoint = other.position.sub(body.position).mul(body.radius / (body.radius + other.radius)).add(body.position);
+                        // console.log(`${distance(body.x, body.y, other.x, other.y)} @@ ${body.radius + other.radius}`);
+                        while (distance(body, other) < (body.radius + other.radius)) {
+                            body.x += Math.cos(angle + Math.PI);
+                            body.y += Math.sin(angle + Math.PI);
+                            other.x += Math.cos(angle);
+                            other.y += Math.sin(angle);
+                        }
+                    } else {
+                        // Nothing to do, no collisions
                     }
-                    dead.push(other.id);
                 }
             }
         });
@@ -400,8 +427,8 @@ function main() {
     fps /= 21;
     lastTime = Date.now();
     ctx.fillStyle = 'black';
-    ctx.clearRect(20, 10, 80, 20);
-    ctx.fillText('FPS ' + Math.floor(fps) + (paused ? ' P' : '') + (slowMotion ? ' S ' + slowMotionInput.value : ''), 20, 20);
+    ctx.clearRect(20, 10, 120, 15);
+    ctx.fillText('FPS ' + Math.floor(fps) + (paused ? ' P' : '') + (slowMotion ? ' S ' + slowMotionInput.value : '') + (' (C: ' + collisionMode + ')'), 20, 20);
     if (fps < 30) {
         debugger;
     }
