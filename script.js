@@ -149,44 +149,45 @@ addEventListener('mousedown', e => {
 
 addEventListener('mouseup', e => {
     if (e.pageX < canvas.width && e.pageY < canvas.height) {
-
-        mousePressed = false;
-        if (x) {
-            let vec = new Vector(startX - e.pageX, startY - e.pageY);
-            vec.normalize();
-            vec.x *= -1 * (distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY)) / 75);
-            vec.y *= -1 * (distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY)) / 75);
-            for (let i = 0; i < 10; i++) {
-                let b = new Thing(startX + Math.random() * 50 - 25, startY + Math.random() * 50 - 25, 1000000);
-                b.velocity = new Vector(vec.x, vec.y);
-                b.velocity.x *= 10;
-                b.velocity.y *= 10;
-                bodies.push(b);
+        if (distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY)) != 0) {
+            mousePressed = false;
+            if (x) {
+                let vec = new Vector(startX - e.pageX, startY - e.pageY);
+                vec.normalize();
+                vec.x *= -1 * (distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY)) / 75);
+                vec.y *= -1 * (distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY)) / 75);
+                for (let i = 0; i < 10; i++) {
+                    let b = new Thing(startX + Math.random() * 50 - 25, startY + Math.random() * 50 - 25, 1000000);
+                    b.velocity = new Vector(vec.x, vec.y);
+                    b.velocity.x *= 10;
+                    b.velocity.y *= 10;
+                    bodies.push(b);
+                }
+            } else {
+                let size = distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY));
+                size *= size;
+                size *= Math.PI;
+                size *= 100000;
+                let body = new Thing(startX, startY, size);
+                bodies.push(body);
+                let vec = new Vector(body.x - e.pageX, body.y - e.pageY);
+                vec.normalize();
+                vec.x *= -1;
+                vec.y *= -1;
+                if (e.shiftKey) {
+                    vec.x *= 2;
+                    vec.y *= 2;
+                }
+                if (e.metaKey) {
+                    vec.x *= 2;
+                    vec.y *= 2;
+                }
+                if (a) vec = new Vector(0, 0);
+                if (e.altKey) {
+                    body.fixed = true;
+                }
+                body.velocity = vec;
             }
-        } else {
-            let size = distance(new Vector(startX, startY), new Vector(e.pageX, e.pageY));
-            size *= size;
-            size *= Math.PI;
-            size *= 100000;
-            let body = new Thing(startX, startY, size);
-            bodies.push(body);
-            let vec = new Vector(body.x - e.pageX, body.y - e.pageY);
-            vec.normalize();
-            vec.x *= -1;
-            vec.y *= -1;
-            if (e.shiftKey) {
-                vec.x *= 2;
-                vec.y *= 2;
-            }
-            if (e.metaKey) {
-                vec.x *= 2;
-                vec.y *= 2;
-            }
-            if (a) vec = new Vector(0, 0);
-            if (e.altKey) {
-                body.fixed = true;
-            }
-            body.velocity = vec;
         }
     }
 });
@@ -324,11 +325,11 @@ function main() {
                             // newObject.velocity = (new Vector(Math.cos(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9, Math.sin(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9)).mul(1 - (Math.random() - 0.5) / 1.5).mul(0.8);
                             newObject.velocity.add(body.velocity);
                             newObject.velocity.angle += Math.random() / 1.5 - 1 / 3;
-                            body.gracePeriods[newObject.id] = 100;
+                            body.gracePeriods[newObject.id] = body.radius / 7;
                             for (let i = 0; i < newThings.length; i++) {
                                 const e = newThings[i];
-                                e.gracePeriods[newObject.id] = 100;
-                                newObject.gracePeriods[e.id] = 100;
+                                e.gracePeriods[newObject.id] = body.radius / 7;
+                                newObject.gracePeriods[e.id] = body.radius / 7;
                             }
                             newObjects.push(newObject);
                             newThings.push(newObject);
