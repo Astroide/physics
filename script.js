@@ -375,9 +375,21 @@ function main() {
                             other.x += Math.cos(angle);
                             other.y += Math.sin(angle);
                         }
-                        let bodyImpactForce = (body.velocity.clone().mul(body.mass).add(other.velocity.clone().mul(other.mass))).mul(0.5);
-                        body.velocity.add(bodyImpactForce.clone().mul(1 / body.mass).vmul(collisionVector).mul(2));
-                        other.velocity.add(bodyImpactForce.clone().mul(1 / other.mass).vmul(collisionVector.mul(-1)).mul(2));
+                        let impactForce = body.velocity.magnitude * body.mass + (other.velocity.magnitude * other.mass);
+                        impactForce /= 2;
+                        let knockBack = body.position.clone().sub(other.position);
+                        knockBack.magnitude = (impactForce / body.mass);
+                        body.velocity.add(knockBack);
+                        {
+                            let impactForce = other.velocity.magnitude * other.mass + (body.velocity.magnitude * body.mass);
+                            impactForce /= 2;
+                            let knockBack = other.position.clone().sub(body.position);
+                            knockBack.magnitude = (impactForce / other.mass);
+                            other.velocity.add(knockBack);
+                        }
+                        // let bodyImpactForce = (body.velocity.clone().mul(body.mass).add(other.velocity.clone().mul(other.mass))).mul(0.5);
+                        // body.velocity.add(bodyImpactForce.clone().mul(1 / body.mass).vmul(collisionVector).mul(2));
+                        // other.velocity.add(bodyImpactForce.clone().mul(1 / other.mass).vmul(collisionVector.mul(-1)).mul(2));
                     } else {
                         // Nothing to do, no collisions
                     }
