@@ -85,7 +85,7 @@ class Thing {
     }
 
     get radius() {
-        return this.fixed ? 10 : Math.sqrt((this.mass / 100000) / Math.PI);
+        return this.radiusOverride || (this.fixed ? 10 : Math.sqrt((this.mass / 100000) / Math.PI));
     }
 
     draw(ctx) {
