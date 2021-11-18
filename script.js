@@ -56,6 +56,10 @@ class Vector {
     clone() {
         return new Vector(this.x, this.y);
     }
+
+    perpendicular() {
+        return new Vector(-this.y, this.x);
+    }
 }
 
 class Thing {
@@ -69,6 +73,15 @@ class Thing {
         this.gracePeriods = {
 
         };
+    }
+
+    get position() {
+        return new Vector(this.x, this.y);
+    }
+
+    set position(position) {
+        this.x = position.x;
+        this.y = position.y;
     }
 
     get radius() {
@@ -100,7 +113,7 @@ class Thing {
         return t;
     }
 }
-
+/** @type {Thing[]} */
 let bodies = [
     // new Thing(300, 300, 5.972e6),
 ];
@@ -301,12 +314,8 @@ function main() {
                     body.mass += other.mass;
                     body.velocity.x /= body.mass;
                     body.velocity.y /= body.mass;
-                    let centerOfMass = new Vector(oldBody.x * oldBody.mass, oldBody.y * oldBody.mass);
-                    centerOfMass.add(new Vector(other.x * other.mass, other.y * other.mass));
-                    centerOfMass.x /= oldBody.mass + other.mass;
-                    centerOfMass.y /= oldBody.mass + other.mass;
-                    body.x = centerOfMass.x;
-                    body.y = centerOfMass.y;
+                    let impactPoint = other.position.sub(body.position).mul(body.radius / (body.radius + other.radius)).add(body.position);
+                    body.position = impactPoint;
                     let collisionSpeed = oldBody.velocity.sub(other.velocity).magnitude;
                     let partMass = 1e6;
                     if (collisionSpeed > 2 && (other.mass > 1e7 && oldBody.mass > 1e7)) {
@@ -320,7 +329,7 @@ function main() {
                             // console.log('size', radius, newObject.radius);
                             newObject.x = body.x; //+ Math.cos(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
                             newObject.y = body.y; //+ Math.sin(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
-                            newObject.velocity = body.velocity.clone().normalize().mul(Math.sign(Math.random() * 2 - 1)).mul(collisionSpeed / 1e9 * 10);
+                            newObject.velocity = body.velocity.clone().perpendicular().normalize().mul(Math.sign(Math.random() * 2 - 1)).mul(collisionSpeed / 1e9 * 10);
                             newObject.velocity.add(body.velocity);
                             // newObject.velocity = (new Vector(Math.cos(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9, Math.sin(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9)).mul(1 - (Math.random() - 0.5) / 1.5).mul(0.8);
                             newObject.velocity.add(body.velocity);
