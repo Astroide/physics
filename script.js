@@ -53,6 +53,12 @@ class Vector {
         return this;
     }
 
+    vmul(other) {
+        this.x *= other.x;
+        this.y *= other.y;
+        return this;
+    }
+
     clone() {
         return new Vector(this.x, this.y);
     }
@@ -369,8 +375,9 @@ function main() {
                             other.x += Math.cos(angle);
                             other.y += Math.sin(angle);
                         }
-                        body.velocity.add(collisionVector.clone().mul(-body.velocity.magnitude));
-                        other.velocity.add(collisionVector.clone().mul(other.velocity.magnitude));
+                        let bodyImpactForce = (body.velocity.clone().mul(body.mass).add(other.velocity.clone().mul(other.mass))).mul(0.5);
+                        body.velocity.add(bodyImpactForce.clone().mul(1 / body.mass).vmul(collisionVector).mul(2));
+                        other.velocity.add(bodyImpactForce.clone().mul(1 / other.mass).vmul(collisionVector.mul(-1)).mul(2));
                     } else {
                         // Nothing to do, no collisions
                     }
