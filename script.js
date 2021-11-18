@@ -341,7 +341,7 @@ function main() {
                                 // console.log('size', radius, newObject.radius);
                                 newObject.x = impactPoint.x; //+ Math.cos(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
                                 newObject.y = impactPoint.y; //+ Math.sin(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
-                                newObject.velocity = body.velocity.clone().perpendicular().normalize().mul(Math.sign(Math.random() * 2 - 1)).mul(collisionSpeed / 1e9 * 10);
+                                newObject.velocity = body.position.clone().sub(other.position).perpendicular().normalize().mul(Math.sign(Math.random() * 2 - 1)).mul(collisionSpeed / 1e9 * 10);
                                 newObject.velocity.add(body.velocity);
                                 // newObject.velocity = (new Vector(Math.cos(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9, Math.sin(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9)).mul(1 - (Math.random() - 0.5) / 1.5).mul(0.8);
                                 newObject.velocity.add(body.velocity);
