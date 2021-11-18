@@ -361,7 +361,7 @@ function main() {
                         // ...
                         console.log('collide');
                         let angle = Math.atan2(other.y - body.y, other.x - body.x);
-                        let impactPoint = other.position.sub(body.position).mul(body.radius / (body.radius + other.radius)).add(body.position);
+                        let collisionVector = other.position.clone().sub(body.position).normalize();
                         // console.log(`${distance(body.x, body.y, other.x, other.y)} @@ ${body.radius + other.radius}`);
                         while (distance(body, other) < (body.radius + other.radius)) {
                             body.x += Math.cos(angle + Math.PI);
@@ -369,6 +369,8 @@ function main() {
                             other.x += Math.cos(angle);
                             other.y += Math.sin(angle);
                         }
+                        body.velocity.add(collisionVector.clone().mul(-body.velocity.magnitude));
+                        other.velocity.add(collisionVector.clone().mul(other.velocity.magnitude));
                     } else {
                         // Nothing to do, no collisions
                     }
