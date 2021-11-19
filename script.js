@@ -271,6 +271,22 @@ addEventListener('keydown', e => {
 function interpolate(a, b, x) {
     return a + (b - a) * x;
 }
+/**
+ * @param {Thing} body
+ * @param {Thing} other
+ * @param {number} angle
+ */
+function getNewSpeed(body, other, angle) {
+    let v1 = body.velocity.magnitude;
+    let v2 = other.velocity.magnitude;
+    let o1 = body.velocity.angle;
+    let o2 = other.velocity.angle;
+    let m1 = body.mass;
+    let m2 = other.mass;
+    let v1x = ((v1 * Math.cos(o1 - angle) * (m1 - m2) + 2 * m2 * v2 * Math.cos(o2 - angle)) / (m1 + m2)) * Math.cos(angle) + v1 * Math.sin(o1 - angle) * Math.cos(angle + Math.PI / 2);
+    let v1y = ((v1 * Math.cos(o1 - angle) * (m1 - m2) + 2 * m2 * v2 * Math.cos(o2 - angle)) / (m1 + m2)) * Math.sin(angle) + v1 * Math.sin(o1 - angle) * Math.sin(angle + Math.PI / 2);
+    return new Vector(v1x, v1y);
+}
 function main() {
     // if (bodies.length < 2) {
     // return;
@@ -312,6 +328,7 @@ function main() {
             // console.log(dir.magnitude);
             let g = 6.67430e-11;
             let force = g * ((body.mass * other.mass) / ((distance(body, other) * 1e-3) ** 2));
+            force = 0;
             //console.log(force);
             // force *= this.mass / other.mass;
             force /= 50;
@@ -348,7 +365,6 @@ function main() {
                                 newObject.x = impactPoint.x; //+ Math.cos(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
                                 newObject.y = impactPoint.y; //+ Math.sin(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
                                 newObject.velocity = body.position.clone().sub(other.position).perpendicular().normalize().mul(Math.sign(Math.random() * 2 - 1)).mul(collisionSpeed / 1e9 * 10);
-                                newObject.velocity.add(body.velocity);
                                 // newObject.velocity = (new Vector(Math.cos(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9, Math.sin(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9)).mul(1 - (Math.random() - 0.5) / 1.5).mul(0.8);
                                 newObject.velocity.add(body.velocity);
                                 newObject.velocity.angle += Math.random() / 1.5 - 1 / 3;
@@ -367,26 +383,22 @@ function main() {
                         // ...
                         console.log('collide');
                         let angle = Math.atan2(other.y - body.y, other.x - body.x);
-                        let collisionVector = other.position.clone().sub(body.position).normalize();
+                        let collisionVector = body.position.clone().sub(other.position).normalize().perpendicular();
                         // console.log(`${distance(body.x, body.y, other.x, other.y)} @@ ${body.radius + other.radius}`);
-                        while (distance(body, other) < (body.radius + other.radius)) {
+                        while (distance(body, other) <= (body.radius + other.radius)) {
                             body.x += Math.cos(angle + Math.PI);
                             body.y += Math.sin(angle + Math.PI);
                             other.x += Math.cos(angle);
                             other.y += Math.sin(angle);
                         }
-                        let impactForce = body.velocity.magnitude * body.mass + (other.velocity.magnitude * other.mass);
-                        impactForce /= 2;
-                        let knockBack = body.position.clone().sub(other.position);
-                        knockBack.magnitude = (impactForce / body.mass);
-                        body.velocity.add(knockBack);
-                        {
-                            let impactForce = other.velocity.magnitude * other.mass + (body.velocity.magnitude * body.mass);
-                            impactForce /= 2;
-                            let knockBack = other.position.clone().sub(body.position);
-                            knockBack.magnitude = (impactForce / other.mass);
-                            other.velocity.add(knockBack);
-                        }
+
+                        body.velocity = getNewSpeed(other, body, collisionVector.angle);
+                        body.velocity.angle += Math.PI;
+                        other.velocity = getNewSpeed(other, body, collisionVector.angle);
+                        other.velocity.angle += Math.PI;
+                        let future = newBodies.find(x => x.id == other.id);
+                        future.velocity = getNewSpeed(other, body, collisionVector.angle);
+                        future.velocity.angle += Math.PI;
                         // let bodyImpactForce = (body.velocity.clone().mul(body.mass).add(other.velocity.clone().mul(other.mass))).mul(0.5);
                         // body.velocity.add(bodyImpactForce.clone().mul(1 / body.mass).vmul(collisionVector).mul(2));
                         // other.velocity.add(bodyImpactForce.clone().mul(1 / other.mass).vmul(collisionVector.mul(-1)).mul(2));
