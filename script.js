@@ -76,9 +76,7 @@ class Thing {
         this.velocity = new Vector(0, 0);
         this.id = Math.floor(Math.random() * 100000);
         this.color = Math.floor(Math.random() * 360);
-        this.gracePeriods = {
-
-        };
+        this.gracePeriods = {};
     }
 
     get position() {
@@ -320,7 +318,7 @@ function main() {
         }
         //console.log(">" + body.velocity.x);
         bodies.forEach(other => {
-            if (other.id == body.id || dead.includes(other.id) || ((body.gracePeriods[other.id] !== undefined && (body.gracePeriods[other.id] > 0)) || ((other.gracePeriods[body.id] !== undefined && (other.gracePeriods[body.id] > 0))))) {
+            if (other.id == body.id || dead.includes(other.id)) {
                 // //console.log('dupe');
                 return;
             }
@@ -328,7 +326,7 @@ function main() {
             // console.log(dir.magnitude);
             let g = 6.67430e-11;
             let force = g * ((body.mass * other.mass) / ((distance(body, other) * 1e-3) ** 2));
-            force = 0;
+            // force = 0;
             //console.log(force);
             // force *= this.mass / other.mass;
             force /= 50;
@@ -336,74 +334,74 @@ function main() {
             dir.magnitude = force / (slowMotion ? slowMotionInput.value : 1);
             // console.log(dir.magnitude);
             body.velocity = body.velocity.add(dir);
-            if (distance(oldBody, other) < (oldBody.radius + other.radius) && (body.gracePeriods[other.id] === undefined || body.gracePeriods[other.id] <= 0)) {
-                if ((oldBody.fixed || other.fixed) || (oldBody.mass < other.mass && collisionMode == 'merge')) {
-                    // ...
-                } else {
-                    if (collisionMode == 'merge') {
-                        oldBody.velocity.x *= body.mass;
-                        oldBody.velocity.y *= body.mass;
-                        other.velocity.x *= other.mass;
-                        other.velocity.y *= other.mass;
-                        body.velocity = oldBody.velocity.add(other.velocity);
-                        body.mass += other.mass;
-                        body.velocity.x /= body.mass;
-                        body.velocity.y /= body.mass;
-                        let impactPoint = other.position.sub(body.position).mul(body.radius / (body.radius + other.radius)).add(body.position);
-                        // body.position = impactPoint;
-                        let collisionSpeed = oldBody.velocity.sub(other.velocity).magnitude;
-                        let partMass = 1e6;
-                        if (collisionSpeed > 2 && (other.mass > 1e7 && oldBody.mass > 1e7)) {
-                            let extra = body.mass / 100 * (collisionSpeed / 1e9);
-                            body.mass -= extra;
-                            // let radius = body.radius;
-                            let count = extra / partMass;
-                            let newThings = [];
-                            for (let i = 0; i < count; i++) {
-                                let newObject = new Thing(0, 0, partMass);
-                                // console.log('size', radius, newObject.radius);
-                                newObject.x = impactPoint.x; //+ Math.cos(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
-                                newObject.y = impactPoint.y; //+ Math.sin(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
-                                newObject.velocity = body.position.clone().sub(other.position).perpendicular().normalize().mul(Math.sign(Math.random() * 2 - 1)).mul(collisionSpeed / 1e9 * 10);
-                                // newObject.velocity = (new Vector(Math.cos(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9, Math.sin(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9)).mul(1 - (Math.random() - 0.5) / 1.5).mul(0.8);
-                                newObject.velocity.add(body.velocity);
-                                newObject.velocity.angle += Math.random() / 1.5 - 1 / 3;
-                                body.gracePeriods[newObject.id] = body.radius / 7;
-                                for (let i = 0; i < newThings.length; i++) {
-                                    const e = newThings[i];
-                                    e.gracePeriods[newObject.id] = body.radius / 7;
-                                    newObject.gracePeriods[e.id] = body.radius / 7;
-                                }
-                                newObjects.push(newObject);
-                                newThings.push(newObject);
-                            }
-                        }
-                        dead.push(other.id);
-                    } else if (collisionMode == 'collide') {
+            if (!(((body.gracePeriods[other.id] !== undefined && (body.gracePeriods[other.id] > 0)) || ((other.gracePeriods[body.id] !== undefined && (other.gracePeriods[body.id] > 0)))))) {
+                if (distance(oldBody, other) < (oldBody.radius + other.radius) && (body.gracePeriods[other.id] === undefined || body.gracePeriods[other.id] <= 0)) {
+                    if ((oldBody.fixed || other.fixed) || (oldBody.mass < other.mass && collisionMode == 'merge')) {
                         // ...
-                        console.log('collide');
-                        let angle = Math.atan2(other.y - body.y, other.x - body.x);
-                        let collisionVector = body.position.clone().sub(other.position).normalize().perpendicular();
-                        // console.log(`${distance(body.x, body.y, other.x, other.y)} @@ ${body.radius + other.radius}`);
-                        while (distance(body, other) <= (body.radius + other.radius)) {
-                            body.x += Math.cos(angle + Math.PI);
-                            body.y += Math.sin(angle + Math.PI);
-                            other.x += Math.cos(angle);
-                            other.y += Math.sin(angle);
-                        }
-
-                        body.velocity = getNewSpeed(other, body, collisionVector.angle);
-                        body.velocity.angle += Math.PI;
-                        other.velocity = getNewSpeed(other, body, collisionVector.angle);
-                        other.velocity.angle += Math.PI;
-                        let future = newBodies.find(x => x.id == other.id);
-                        future.velocity = getNewSpeed(other, body, collisionVector.angle);
-                        future.velocity.angle += Math.PI;
-                        // let bodyImpactForce = (body.velocity.clone().mul(body.mass).add(other.velocity.clone().mul(other.mass))).mul(0.5);
-                        // body.velocity.add(bodyImpactForce.clone().mul(1 / body.mass).vmul(collisionVector).mul(2));
-                        // other.velocity.add(bodyImpactForce.clone().mul(1 / other.mass).vmul(collisionVector.mul(-1)).mul(2));
                     } else {
-                        // Nothing to do, no collisions
+                        if (collisionMode == 'merge') {
+                            body.velocity = oldBody.velocity.clone().mul(body.mass).add(other.velocity.clone().mul(other.mass));
+                            body.mass += other.mass;
+                            body.velocity.x /= body.mass;
+                            body.velocity.y /= body.mass;
+                            let impactPoint = other.position.sub(body.position).mul(body.radius / (body.radius + other.radius)).add(body.position);
+                            // body.position = impactPoint;
+                            let collisionSpeed = oldBody.velocity.sub(other.velocity).magnitude;
+                            console.log('%c' + collisionSpeed, 'font-size: 20px; color: green; text-shadow: 1px 1px 3px red; background-color: pink; border-radius: 5px; cursor: pointer;');
+                            if (collisionSpeed > 2 && (other.mass > 1e7 && oldBody.mass > 1e7)) {
+                                let partMass = body.mass / 1e3;
+                                let extra = Math.sqrt(body.mass / 1e4) * 1e4 * (collisionSpeed);
+                                body.mass -= extra;
+                                // let radius = body.radius;
+                                let count = extra / partMass;
+                                let newThings = [];
+                                for (let i = 0; i < count; i++) {
+                                    let newObject = new Thing(0, 0, partMass);
+                                    // console.log('size', radius, newObject.radius);
+                                    newObject.x = impactPoint.x; //+ Math.cos(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
+                                    newObject.y = impactPoint.y; //+ Math.sin(Math.PI * 2 * i / count) * (radius + newObject.radius + 10);
+                                    newObject.velocity = body.position.clone().sub(other.position).perpendicular().normalize().mul(Math.sign(Math.random() * 2 - 1)).mul(collisionSpeed);
+                                    // newObject.velocity = (new Vector(Math.cos(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9, Math.sin(Math.PI * 2 * i / count + (Math.random() / 1.1 - 0.5 / 1.1)) * 5 * collisionSpeed / 1e9)).mul(1 - (Math.random() - 0.5) / 1.5).mul(0.8);
+                                    newObject.velocity.add(body.velocity);
+                                    newObject.velocity.angle += Math.random() / 1.5 - 1 / 3;
+                                    newObject.velocity.magnitude += Math.random();
+                                    body.gracePeriods[newObject.id] = body.radius / 7;
+                                    for (let i = 0; i < newThings.length; i++) {
+                                        const e = newThings[i];
+                                        e.gracePeriods[newObject.id] = body.radius / 7;
+                                        newObject.gracePeriods[e.id] = body.radius / 7;
+                                    }
+                                    newObjects.push(newObject);
+                                    newThings.push(newObject);
+                                }
+                            }
+                            dead.push(other.id);
+                        } else if (collisionMode == 'collide') {
+                            // ...
+                            console.log('collide');
+                            let angle = Math.atan2(other.y - body.y, other.x - body.x);
+                            let collisionVector = body.position.clone().sub(other.position).normalize().perpendicular();
+                            // console.log(`${distance(body.x, body.y, other.x, other.y)} @@ ${body.radius + other.radius}`);
+                            while (distance(body, other) <= (body.radius + other.radius)) {
+                                body.x += Math.cos(angle + Math.PI);
+                                body.y += Math.sin(angle + Math.PI);
+                                other.x += Math.cos(angle);
+                                other.y += Math.sin(angle);
+                            }
+
+                            body.velocity = getNewSpeed(other, body, collisionVector.angle);
+                            body.velocity.angle += Math.PI;
+                            other.velocity = getNewSpeed(other, body, collisionVector.angle);
+                            other.velocity.angle += Math.PI;
+                            let future = newBodies.find(x => x.id == other.id);
+                            future.velocity = getNewSpeed(other, body, collisionVector.angle);
+                            future.velocity.angle += Math.PI;
+                            // let bodyImpactForce = (body.velocity.clone().mul(body.mass).add(other.velocity.clone().mul(other.mass))).mul(0.5);
+                            // body.velocity.add(bodyImpactForce.clone().mul(1 / body.mass).vmul(collisionVector).mul(2));
+                            // other.velocity.add(bodyImpactForce.clone().mul(1 / other.mass).vmul(collisionVector.mul(-1)).mul(2));
+                        } else {
+                            // Nothing to do, no collisions
+                        }
                     }
                 }
             }
